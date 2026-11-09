@@ -1,11 +1,11 @@
 # Building a course with the generic engine
 
-The neutral example has two lessons: `/` and `/topics/practice/`. The order comes from `courseData.lessons` in `src/data/course.ts`; `src/data/course-config.ts` turns that list into validated runtime and package configuration. Edit course copy and lesson labels in `course.ts`, milestone requirements and storage version in `course-completion.ts`, and package identifier and filename in `course-config.ts`. Keep the existing theme and shared typography unless an approved course brief calls for scoped changes.
+The current Pegasus Plus 2 course has one scrolling page at `/`. Its content, section labels and order come from `src/data/course.ts`; `src/data/course-config.ts` supplies validated runtime and package configuration. Edit milestone requirements and storage version in `course-completion.ts`, and package identifier and filename in `course-config.ts`. Keep the shared typography and component system for future courses.
 
 ## Add a lesson
 
 1. Add `{ id: "review", path: "/review/", label: "Review" }` to `courseData.lessons`.
-2. Add a `review` entry to `courseData.lessonPages` with the same fields as the neutral `practice` entry. Give it unique `targets` and real copy. The catch-all Astro route generates `/review/index.html` automatically. A nested path such as `/topics/review/` also works.
+2. Add an Astro page for the new route and its approved content. The current catch-all route only redirects the two former Pegasus lesson URLs; it does not generate new lesson pages automatically. Give the new page unique targets and package-safe links.
 3. Add matching milestones in `course-completion.ts`. For example:
 
    ```ts

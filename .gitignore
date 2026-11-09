@@ -18,6 +18,8 @@ scorm-output/
 .verification-*.png
 .verification-dist/
 .verification-scorm/
+.tmp-*.mjs
+qa-*.png
 debug.log
 npm-debug.log*
 yarn-debug.log*

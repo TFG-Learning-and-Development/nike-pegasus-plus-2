@@ -1,0 +1,88 @@
+---
+type Model = { id: string; name: string; bestFor: string; position: string; image: string; alt: string };
+type Need = { id: string; prompt: string; correctId: string; reason: string };
+interface Props { id: string; title: string; intro: string; models: readonly Model[]; needs: readonly Need[]; honesty?: string }
+const { id, title, intro, models, needs, honesty } = Astro.props as Props;
+---
+<section class="premium-section model-section" id={id} data-completion-id={id} data-required-items={JSON.stringify(needs.map((need) => need.id))} data-model-choice data-model-config={JSON.stringify({ needs, models })} aria-labelledby={`${id}-heading`}>
+  <div class="container">
+    <div class="premium-section__intro"><h2 id={`${id}-heading`}>{title}</h2><p>{intro}</p></div>
+    <div class="model-choice">
+      <div class="model-choice__needs" aria-label="Customer needs">{needs.map((need, index) => <button type="button" data-explore-item={need.id} aria-pressed={index === 0 ? "true" : "false"}>{need.prompt}</button>)}</div>
+      <div class="model-choice__main">
+        <div class="model-choice__prompt"><h3>Customer need</h3><p data-need-prompt>{needs[0]?.prompt}</p><p>Which Pegasus model is the best match? Choose a card.</p></div>
+        <div class="model-choice__cards">{models.map((model) => <button type="button" data-model-id={model.id} aria-pressed="false"><img src={model.image} alt={model.alt} width="600" height="400" loading="lazy" /><strong>{model.name}</strong><span>{model.bestFor}</span></button>)}</div>
+        <p class="model-choice__feedback" data-model-feedback role="status" aria-live="polite" hidden></p>
+      </div>
+    </div>
+    <div class="model-guide"><h3>Quick decision guide</h3><div>{models.map((model) => <article><strong>{model.name}</strong><p>{model.position}</p></article>)}</div></div>
+    {honesty && <p class="model-honesty"><strong>Be honest with the Customer.</strong> {honesty}</p>}
+  </div>
+</section>
+<script>
+  import { courseStateReady } from "../lib/course-state";
+  courseStateReady.then((courseState) => document.querySelectorAll<HTMLElement>("[data-model-choice]").forEach((root) => {
+    if (root.dataset.ready) return; root.dataset.ready = "true";
+    const config = JSON.parse(root.dataset.modelConfig || "{}") as { needs: { id: string; prompt: string; correctId: string; reason: string }[]; models: { id: string; name: string }[] };
+    const needButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-explore-item]")];
+    const modelButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-model-id]")];
+    const prompt = root.querySelector<HTMLElement>("[data-need-prompt]");
+    const feedback = root.querySelector<HTMLElement>("[data-model-feedback]");
+    const answers = courseState.get<Record<string, string>>(`${root.id}:answers`, {});
+    let active = courseState.get<string>(`${root.id}:active`, config.needs[0]?.id || "");
+    if (!config.needs.some((need) => need.id === active)) active = config.needs[0]?.id || "";
+    const render = () => {
+      const need = config.needs.find((item) => item.id === active);
+      if (!need) return;
+      needButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.exploreItem === active)));
+      if (prompt) prompt.textContent = need.prompt;
+      modelButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.modelId === answers[active])));
+      if (feedback) {
+        if (!answers[active]) { feedback.hidden = true; feedback.textContent = ""; }
+        else {
+          const correct = answers[active] === need.correctId;
+          feedback.hidden = false;
+          feedback.textContent = `${correct ? "Best match." : "Another model is a better match."} ${need.reason}`;
+          feedback.dataset.result = correct ? "correct" : "incorrect";
+        }
+      }
+    };
+    needButtons.forEach((button) => button.addEventListener("click", () => { active = button.dataset.exploreItem || active; courseState.set(`${root.id}:active`, active); render(); }));
+    modelButtons.forEach((button) => button.addEventListener("click", () => {
+      if (!active || !button.dataset.modelId) return;
+      answers[active] = button.dataset.modelId;
+      courseState.set(`${root.id}:answers`, answers);
+      render();
+      window.dispatchEvent(new CustomEvent("course-progress:explore", { detail: { activityId: root.id, itemId: active } }));
+    }));
+    render();
+  }));
+</script>
+<style>
+  .model-section { color: #fff; background: var(--course-surface-strong); }
+  .model-choice { overflow: hidden; border: 1px solid rgb(255 255 255 / 22%); border-radius: var(--course-radius-card); background: #fff; box-shadow: var(--course-shadow-card); }
+  .model-choice__needs { display: flex; gap: .75rem; overflow-x: auto; padding: var(--course-space-card); background: var(--course-accent-strong); }
+  .model-choice__needs button { min-height: 3rem; flex: 1 0 min(13rem, 80%); padding: .65rem 1rem; border: 2px solid rgb(255 255 255 / 55%); border-radius: var(--course-radius-control); color: #fff; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
+  .model-choice__needs button[aria-pressed="true"], .model-choice__needs button:hover { color: var(--ink); background: #fff; }
+  .model-choice__main { padding: var(--course-space-card); color: var(--ink); }
+  .model-choice__prompt { margin-bottom: var(--course-space-grid); }
+  .model-choice__prompt h3 { margin-bottom: .5rem; }
+  .model-choice__prompt p { margin-bottom: .5rem; }
+  .model-choice__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--course-space-grid); }
+  .model-choice__cards button { display: grid; align-content: start; gap: .75rem; min-width: 0; padding: 0 0 var(--course-space-card); overflow: hidden; border: 2px solid var(--line); border-radius: var(--course-radius-card); color: var(--ink); background: #fff; text-align: left; font: inherit; cursor: pointer; }
+  .model-choice__cards button:hover, .model-choice__cards button[aria-pressed="true"] { border-color: var(--course-accent); box-shadow: var(--course-shadow-card); }
+  .model-choice__cards img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--course-surface-muted); }
+  .model-choice__cards strong, .model-choice__cards span { margin-inline: var(--course-space-card); overflow-wrap: anywhere; }
+  .model-choice__cards strong { color: var(--course-accent-strong); }
+  .model-choice__feedback { margin: var(--course-space-grid) 0 0; padding: var(--course-space-card); border-radius: var(--course-radius-control); color: var(--ink); background: var(--course-accent); }
+  .model-choice__feedback[data-result="incorrect"] { color: #fff; background: var(--course-surface-strong); }
+  .model-guide { margin-top: var(--course-space-section-compact); }
+  .model-guide h3 { margin-bottom: var(--course-space-grid); }
+  .model-guide > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--course-space-grid); }
+  .model-guide article { padding: var(--course-space-card); border: 1px solid rgb(255 255 255 / 25%); border-radius: var(--course-radius-card); }
+  .model-guide strong { color: var(--course-accent); }
+  .model-guide p { margin: .5rem 0 0; }
+  .model-honesty { margin: var(--course-space-grid) 0 0; padding: var(--course-space-card); border-left: .35rem solid var(--course-accent); background: rgb(255 255 255 / 8%); }
+  .model-choice :focus-visible { outline: .2rem solid var(--course-accent); outline-offset: .2rem; }
+  @media (max-width: 48rem) { .model-choice__needs { flex-direction: column; overflow: visible; } .model-choice__needs button { flex: 0 0 auto; } .model-choice__cards, .model-guide > div { grid-template-columns: 1fr; } .model-choice__cards button { grid-template-columns: 35% minmax(0, 1fr); align-items: center; padding: 0; } .model-choice__cards img { grid-row: span 2; height: 100%; } .model-choice__cards strong, .model-choice__cards span { margin-inline: var(--course-space-card); } }
+</style>

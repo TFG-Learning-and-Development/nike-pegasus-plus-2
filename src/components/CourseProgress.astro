@@ -6,7 +6,7 @@ interface Props {
 }
 
 const { config } = Astro.props as Props;
-const runtimeConfig = { lessons: config.lessons, ...config.completion };
+const runtimeConfig = { lessons: config.lessons, sections: config.sections || [], ...config.completion };
 ---
 
 <div class="course-progress" data-course-progress>
@@ -58,6 +58,7 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
 
     const milestones = config.milestones as Milestone[];
     const lessons = config.lessons as { id: string; path: string; label: string }[];
+    const sections = config.sections as { id: string; label: string; milestoneIds: string[] }[];
     const requiredMilestones = milestones.filter((milestone) => milestone.required);
     const sequentialUnlocking = config.sequentialUnlocking === true;
     const currentPath = document.querySelector<HTMLElement>("[data-course-path]")?.dataset.coursePath || location.pathname;
@@ -136,7 +137,7 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
     const fromSuspendData = (raw: string): PersistedState | null => {
       try {
         const compact = JSON.parse(raw);
-        if (compact.v !== storageKey || compact.s !== signature || !Array.isArray(compact.c) || !compact.w || !compact.e) return null;
+        if (compact.v !== storageKey || (compact.s !== signature && !config.legacySignatures?.includes(compact.s)) || !Array.isArray(compact.c) || !compact.w || !compact.e) return null;
         const idAt = (index: number) => Number.isInteger(index) ? milestones[index]?.id : undefined;
         const completed = compact.c.map(idAt);
         const watchRanges = Object.fromEntries(Object.entries(compact.w).map(([index, ranges]) => [idAt(Number(index)), ranges]));
@@ -405,7 +406,7 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
         head.className = "course-progress__lesson-head";
         const link = document.createElement(locked ? "span" : "a");
         if (link instanceof HTMLAnchorElement) {
-          link.href = courseUrl(lesson.path);
+          link.href = sections.length === 1 ? `${courseUrl(lesson.path)}#${sections[0].id}` : courseUrl(lesson.path);
           link.addEventListener("click", () => setPanelOpen(false, false));
         }
         link.textContent = lesson.label;
@@ -442,7 +443,21 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
             const heading = document.createElement("h3");
             heading.textContent = "Still to do";
             const list = document.createElement("ul");
+            let previousSection = "";
             outstanding.forEach((milestone) => {
+              const section = sections.find((item) => item.milestoneIds.includes(milestone.id));
+              if (section && section.id !== previousSection) {
+                const sectionRow = document.createElement("li");
+                sectionRow.className = "course-progress__section-row";
+                const sectionLink = document.createElement("a");
+                sectionLink.href = `${courseUrl(lesson.path)}#${encodeURIComponent(section.id)}`;
+                sectionLink.dataset.checklistTarget = section.id;
+                sectionLink.dataset.checklistPath = lesson.path;
+                sectionLink.textContent = section.label;
+                sectionRow.append(sectionLink);
+                list.append(sectionRow);
+                previousSection = section.id;
+              }
               const row = document.createElement("li");
               const activity = document.createElement(locked ? "span" : "a");
               activity.textContent = milestone.label;
@@ -476,8 +491,11 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
               tick.className = "course-progress__completed-tick";
               tick.setAttribute("aria-hidden", "true");
               tick.textContent = "✓";
-              const label = document.createElement("span");
+              const label = document.createElement("a");
               label.textContent = milestone.label;
+              label.href = `${courseUrl(lesson.path)}#${encodeURIComponent(milestone.targetId)}`;
+              label.dataset.checklistTarget = milestone.targetId;
+              label.dataset.checklistPath = lesson.path;
               row.append(tick, label);
               list.append(row);
             });
@@ -520,6 +538,7 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
       if (link.dataset.checklistPath !== currentPath) return;
       event.preventDefault();
       setPanelOpen(false, false);
+      history.replaceState(null, "", `#${encodeURIComponent(link.dataset.checklistTarget || "")}`);
       focusActivity(link.dataset.checklistTarget || "");
     });
 
@@ -675,11 +694,16 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
     milestones.filter((milestone) => milestone.type === "submit").forEach((milestone) => {
       const target = targetFor(milestone);
       const form = target instanceof HTMLFormElement ? target : target?.querySelector("form");
-      form?.addEventListener("submit", () => {
+      const recordValidResponse = () => {
         const selected = form.querySelector<HTMLInputElement>("input[data-completion-option]:checked");
         const selectedOption = form.querySelector<HTMLSelectElement>("select[data-completion-option]");
         if (selected || selectedOption?.value) markComplete(milestone.id);
-      });
+      };
+      if (form?.dataset.responseOnChange === "true") {
+        form.addEventListener("change", (event) => {
+          if (event.target instanceof HTMLInputElement && event.target.matches("input[data-completion-option]") && event.target.checked) recordValidResponse();
+        });
+      } else form?.addEventListener("submit", recordValidResponse);
     });
 
     milestones.filter((milestone) => milestone.type === "watch").forEach((milestone) => {
@@ -719,8 +743,8 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
 
 <style>
   .course-progress { position: relative; flex: 0 0 auto; align-self: center; font-family: var(--course-type-font-sans); line-height: var(--course-type-ui-line-height); }
-  .course-progress__trigger { display: flex; min-height: 2.75rem; align-items: center; gap: 0.45rem; padding: 0.45rem 0.75rem; border: 1px solid #fff; border-radius: 0.35rem; background: transparent; color: #fff; font-size: var(--course-type-ui-size); cursor: pointer; }
-  .course-progress__trigger:hover, .course-progress__trigger[aria-expanded="true"] { background: rgb(255 255 255 / 14%); }
+  .course-progress__trigger { display: flex; min-height: 2.75rem; align-items: center; gap: 0.45rem; padding: 0.45rem 0.75rem; border: 1px solid rgb(255 255 255 / 85%); border-radius: 0.35rem; background: rgb(255 255 255 / 12%); color: #fff; font-size: var(--course-type-ui-size); cursor: pointer; }
+  .course-progress__trigger:hover, .course-progress__trigger[aria-expanded="true"] { background: rgb(255 255 255 / 22%); }
   .course-progress__trigger span { font-size: inherit; line-height: 1; }
   .course-progress__trigger strong { font-size: inherit; line-height: 1; }
   .course-progress__panel { position: absolute; top: calc(100% + 0.75rem); right: 0; z-index: 40; width: min(340px, calc(100vw - 2rem)); max-height: min(42rem, calc(100dvh - 6.5rem)); overflow-y: auto; padding: 24px 20px; border: 1px solid #dfe5ea; border-radius: 0.35rem; background: #fff; box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 22%); color: #071827; }
@@ -751,20 +775,24 @@ const runtimeConfig = { lessons: config.lessons, ...config.completion };
   :global(.course-progress__activity-group h3) { margin: 0 0 5px; color: #071827; font-size: var(--course-type-ui-size); font-weight: 700; line-height: var(--course-type-ui-line-height); }
   :global(.course-progress__activity-group ul), :global(.course-progress__completed-group ul) { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
   :global(.course-progress__activity-group li), :global(.course-progress__completed-group li) { margin: 0; font-size: var(--course-type-ui-size); line-height: var(--course-type-ui-line-height); }
+  :global(.course-progress__section-row) { padding-top: .55rem; font-weight: 700; }
+  :global(.course-progress__section-row:first-child) { padding-top: .15rem; }
+  :global(.course-progress__section-row + li) { padding-left: .75rem; }
   :global(.course-progress__activity-group a) { color: var(--course-accent-strong); text-decoration: underline; text-underline-offset: 2px; }
   :global(.course-progress__activity-group a:hover), :global(.course-progress__activity-group a:focus-visible) { color: var(--course-accent); outline-color: var(--focus-on-light); }
   :global(.course-progress__activity-group span) { color: #435261; }
-  :global(.course-progress__all-done) { margin-top: 12px !important; color: #146b51 !important; font-weight: 700; }
+  :global(.course-progress__all-done) { margin-top: 12px !important; color: var(--ink) !important; font-weight: 700; }
   :global(.course-progress__none-completed) { margin-top: 12px !important; }
   :global(.course-progress__completed-group) { margin-top: 12px; }
   :global(.course-progress__completed-group summary) { color: #071827; font-size: var(--course-type-ui-size); font-weight: 700; line-height: var(--course-type-ui-line-height); cursor: pointer; }
   :global(.course-progress__completed-group summary:focus-visible) { outline: 2px solid var(--focus-on-light); outline-offset: 3px; }
   :global(.course-progress__completed-group ul) { margin-top: 7px; }
   :global(.course-progress__completed-group li) { display: flex; gap: 7px; color: #435261; }
-  :global(.course-progress__completed-tick) { flex: 0 0 auto; color: #146b51; font-weight: 700; }
+  :global(.course-progress__completed-tick) { flex: 0 0 auto; color: var(--course-accent); font-weight: 700; }
   @media (max-width: 64rem) {
     .course-progress__trigger { min-height: 2.75rem; padding-inline: 0.6rem; }
     .course-progress__panel { right: 0; max-height: calc(100dvh - 5.75rem); }
   }
+  @media (max-width: 30rem) { .course-progress__trigger { gap: .3rem; padding-inline: .45rem; } }
   @media (prefers-reduced-motion: reduce) { .course-progress__bar span, :global(.course-progress__lesson-bar span) { transition: none; } }
 </style>

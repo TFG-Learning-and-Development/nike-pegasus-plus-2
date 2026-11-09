@@ -1,31 +1,23 @@
 export type CompletionType = "view" | "watch" | "submit" | "explore" | "complete" | "optional";
-
 export type CompletionMilestone = {
-  id: string;
-  label: string;
-  type: CompletionType;
-  targetId: string;
-  path: string;
-  required: boolean;
-  requiredItems?: string[];
-  threshold?: number;
+  id: string; label: string; type: CompletionType; targetId: string; path: string; required: boolean;
+  requiredItems?: string[]; threshold?: number;
 };
-
-// Increment this version when requirements change. Suspend data also carries
-// the exact ordered IDs, so accidental reordering cannot reinterpret progress.
 export const completionSettings = {
-  storageKey: "astro-course-progress:course-shell:v3",
-  sequentialUnlocking: true,
+  storageKey: "astro-course-progress:nike-pegasus-plus-2:v1",
+  sequentialUnlocking: false,
+  // The original three-route package used the same IDs and evidence contract.
+  legacySignatures: ["0729a9e31a2a9d90"],
 } as const;
-
 export const completionMilestones: CompletionMilestone[] = [
-  { id: "overview", label: "Course overview", type: "view", targetId: "overview", path: "/", required: true },
-  { id: "story", label: "Learner perspective", type: "view", targetId: "story", path: "/", required: true },
-  { id: "principles", label: "Explore the principles", type: "explore", targetId: "principles", path: "/", requiredItems: ["clarity", "rhythm", "purpose"], required: true },
-  { id: "assessment", label: "Answer the knowledge check", type: "submit", targetId: "assessment", path: "/", required: true },
-  { id: "practice-intro", label: "Practice introduction", type: "view", targetId: "practice-intro", path: "/topics/practice/", required: true },
-  { id: "practice-explorer", label: "Explore the planning lenses", type: "explore", targetId: "practice-explorer", path: "/topics/practice/", requiredItems: ["plan", "discuss", "reflect"], required: true },
-  { id: "practice-steps", label: "Explore the build steps", type: "explore", targetId: "practice-steps", path: "/topics/practice/", requiredItems: ["notice", "decide", "act"], required: true },
-  { id: "practice-match", label: "Submit the matching activity", type: "submit", targetId: "practice-match", path: "/topics/practice/", required: true },
-  { id: "practice-reflection", label: "Save the reflection", type: "complete", targetId: "practice-reflection", path: "/topics/practice/", required: true },
+  { id: "pegasus-intro", label: "Meet the Pegasus Plus 2", type: "view", targetId: "pegasus-intro", path: "/", required: true },
+  { id: "pegasus-customer", label: "Explore the Customer's need", type: "explore", targetId: "pegasus-customer", path: "/", requiredItems: ["customer", "reason"], required: true },
+  { id: "pegasus-benefits", label: "Explore four product benefits", type: "explore", targetId: "pegasus-benefits", path: "/", requiredItems: ["zoomx-foam", "air-zoom", "secure-fit", "waffle-outsole"], required: true },
+  { id: "pegasus-model-choice", label: "Match three Customer needs", type: "explore", targetId: "pegasus-model-choice", path: "/", requiredItems: ["everyday", "faster", "cushioning"], required: true },
+  { id: "pegasus-getsales", label: "Explore eight GETSALES steps", type: "explore", targetId: "pegasus-getsales", path: "/", requiredItems: ["greet", "establish", "test", "sell", "address", "lead", "ensure", "thanks"], required: true },
+  { id: "pegasus-check-model", label: "Answer the model recommendation", type: "submit", targetId: "pegasus-check-model", path: "/", required: true },
+  { id: "pegasus-check-benefits", label: "Answer the benefit explanation", type: "submit", targetId: "pegasus-check-benefits", path: "/", required: true },
+  { id: "pegasus-check-other-model", label: "Answer the alternative model response", type: "submit", targetId: "pegasus-check-other-model", path: "/", required: true },
+  { id: "pegasus-check-getsales", label: "Answer the GETSALES response", type: "submit", targetId: "pegasus-check-getsales", path: "/", required: true },
+  { id: "pegasus-finish", label: "Review the recommendation guide", type: "view", targetId: "pegasus-finish", path: "/", required: true },
 ];

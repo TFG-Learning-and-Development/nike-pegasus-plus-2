@@ -122,7 +122,12 @@ try {
       await ready(routePage);
       assert(routePage.url() === url(lesson.path) && await routePage.title() === config.package.title, `Packaged route did not render: ${lesson.path}`);
       assert(await routePage.evaluate(() => document.styleSheets.length > 0), `CSS did not load on ${lesson.path}`);
-      assert(await routePage.locator("img").evaluateAll((images) => images.every((image) => image.complete && image.naturalWidth > 0)), `Broken image on ${lesson.path}`);
+      const brokenImages = (await routePage.locator("img").evaluateAll(async (images) => Promise.all(images.map(async (image) => {
+        image.loading = "eager";
+        try { await image.decode(); return null; }
+        catch { return image.currentSrc || image.src; }
+      })))).filter(Boolean);
+      assert(brokenImages.length === 0, `Broken image on ${lesson.path}: ${brokenImages.join(", ")}`);
       for (const target of config.lessons) assert((await routePage.locator(`a[data-lesson-path="${target.path}"]`).first().getAttribute("href")) === `${base}${fileFor(target.path)}`, `Lesson link lacks explicit index.html: ${target.path}`);
       if (index === 0 && config.lessons.length > 1) {
         await routePage.evaluate(() => document.querySelector("[data-next-lesson]").addEventListener("click", (event) => event.preventDefault(), { once: true, capture: true }));
@@ -196,6 +201,31 @@ try {
     assert(milestones.filter((item) => item.required).length || freshState.values["cmi.core.lesson_status"] !== "completed", "Empty requirements completed the LMS.");
     await freshContext.close();
 
+    const selectionMilestone = milestones.find((item) => item.required && item.type === "submit" && item.path === "/");
+    if (selectionMilestone) {
+      const selectionContext = await browser.newContext();
+      await installMock(selectionContext, seed({ "cmi.core.lesson_status": "incomplete", "cmi.core.lesson_location": "/choose-and-practise/", "cmi.suspend_data": suspend(selectionMilestone.id) }));
+      const selectionPage = await selectionContext.newPage();
+      monitor(selectionPage, "selection and legacy location", origin);
+      await selectionPage.goto(url("/"), { waitUntil: "networkidle" });
+      await ready(selectionPage);
+      assert(selectionPage.url() === url("/"), "An old lesson location redirected the single-page course.");
+      const beforeSelection = await state(selectionPage);
+      assert(beforeSelection.values["cmi.core.lesson_status"] === "incomplete" && calls(beforeSelection, "LMSFinish").length === 0, "Selection milestone completed before a valid response.");
+      const selectionForm = selectionPage.locator(`#${selectionMilestone.targetId}`);
+      await selectionForm.locator("input[data-completion-option]").first().check();
+      await selectionPage.waitForFunction(() => JSON.parse(localStorage.getItem("__strict_lms_mock")).values["cmi.core.lesson_status"] === "completed");
+      assert(await selectionForm.locator("[data-answer-feedback][data-result]").isVisible(), "Packaged selection did not reveal feedback.");
+      const selectedState = await state(selectionPage);
+      assert(calls(selectedState, "LMSInitialize").length === 1 && calls(selectedState, "LMSFinish").length === 0 && selectedState.invalid.length === 0, "Answer selection changed the active LMS session.");
+      await selectionPage.reload({ waitUntil: "networkidle" });
+      await ready(selectionPage);
+      assert(await selectionPage.locator(`#${selectionMilestone.targetId} [data-answer-feedback][data-result]`).isVisible(), "Packaged answer feedback did not restore.");
+      const restoredSelection = await state(selectionPage);
+      assert(restoredSelection.values["cmi.core.lesson_status"] === "completed" && restoredSelection.invalid.length === 0, "Answer resume lost LMS completion or made invalid session calls.");
+      await selectionContext.close();
+    }
+
     const finalMilestone = milestones.find((item) => item.required && item.type === "view") || milestones.filter((item) => item.required).at(-1);
     if (finalMilestone) {
       const completionContext = await browser.newContext();
@@ -218,8 +248,11 @@ try {
           if (input) input.checked = true;
           else if (select) select.value = select.options[1]?.value || select.options[0]?.value || "";
           else throw new Error(`Missing final submission option: ${targetId}`);
-          form.addEventListener("submit", (event) => event.preventDefault(), { once: true });
-          form.requestSubmit();
+          if (form.dataset.responseOnChange === "true") (input || select).dispatchEvent(new Event("change", { bubbles: true }));
+          else {
+            form.addEventListener("submit", (event) => event.preventDefault(), { once: true });
+            form.requestSubmit();
+          }
         } else if (type === "watch" && target instanceof HTMLVideoElement) {
           Object.defineProperty(target, "duration", { configurable: true, value: 100 });
           Object.defineProperty(target, "played", { configurable: true, value: { length: 1, start: () => 0, end: () => 100 } });

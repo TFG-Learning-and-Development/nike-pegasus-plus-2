@@ -2,6 +2,8 @@ import { courseData } from "./course";
 import { completionMilestones, completionSettings, type CompletionMilestone } from "./course-completion";
 
 export type CourseLesson = { id: string; path: string; label: string };
+export type CourseSection = { id: string; label: string; milestoneIds: readonly string[] };
+export type CourseNavigationLesson = { id: string; title: string; targetId: string };
 export type CourseTheme = {
   colors: { ink: string; muted: string; accent: string; accentStrong: string; surface: string; surfaceSoft: string; footer: string };
   surfaces: { muted: string; strong: string };
@@ -12,7 +14,9 @@ export type CourseConfig = {
   brand: { homeLabel: string; logoSrc?: string; logoAlt?: string };
   theme: CourseTheme;
   lessons: CourseLesson[];
-  completion: { storageKey: string; sequentialUnlocking: boolean; milestones: CompletionMilestone[] };
+  sections?: readonly CourseSection[];
+  navigationLessons?: readonly CourseNavigationLesson[];
+  completion: { storageKey: string; sequentialUnlocking: boolean; milestones: CompletionMilestone[]; legacySignatures?: readonly string[] };
   package: { identifier: string; filename: string; launchFile: "index.html"; title: string };
 };
 
@@ -23,12 +27,18 @@ export const defaultCourseTheme: CourseTheme = {
 };
 
 export const courseConfig: CourseConfig = {
-  identity: { id: "course-shell", title: courseData.meta.title, description: courseData.meta.description },
-  brand: { homeLabel: courseData.brand.homeLabel, logoSrc: "/assets/demo/brand-mark.svg", logoAlt: "Neutral course foundation" },
-  theme: defaultCourseTheme,
+  identity: { id: "nike-pegasus-plus-2", title: "Content", description: courseData.meta.description },
+  brand: { homeLabel: courseData.brand.homeLabel, logoSrc: "/assets/course/totalsports-wordmark-white.png", logoAlt: "Totalsports" },
+  theme: {
+    colors: { ink: "#1e1f20", muted: "#46535a", accent: "#009fd7", accentStrong: "#009fd7", surface: "#ffffff", surfaceSoft: "#e1e5e7", footer: "#1e1f20" },
+    surfaces: { muted: "#e1e5e7", strong: "#1e1f20" },
+    gradients: { soft: "linear-gradient(135deg, #ffffff, #e1e5e7)", strong: "linear-gradient(135deg, #009fd7, #1e1f20)" },
+  },
   lessons: courseData.lessons.map((lesson) => ({ ...lesson })),
+  sections: courseData.progressSections,
+  navigationLessons: courseData.navigationLessons,
   completion: { ...completionSettings, milestones: completionMilestones },
-  package: { identifier: "course-shell-scorm-12", filename: "Course-Shell-SCORM-1.2.zip", launchFile: "index.html", title: courseData.meta.title },
+  package: { identifier: "nike-pegasus-plus-2-scorm-12", filename: "Nike-Pegasus-Plus-2-SCORM-1.2.zip", launchFile: "index.html", title: "Content" },
 };
 
 export function validateCourseConfig(config: CourseConfig): void {
@@ -55,6 +65,22 @@ export function validateCourseConfig(config: CourseConfig): void {
   if (!idPattern.test(config.package.identifier) || !/^[A-Za-z0-9][A-Za-z0-9._-]*\.zip$/.test(config.package.filename) || config.package.launchFile !== "index.html") errors.push("Invalid SCORM package identity.");
   unique(config.completion.milestones.map((item) => item.id), "Milestone IDs");
   unique(config.completion.milestones.map((item) => item.targetId), "Milestone targets");
+  if (config.sections) {
+    unique(config.sections.map((section) => section.id), "Section IDs");
+    const sectionMilestones = config.sections.flatMap((section) => [...section.milestoneIds]);
+    unique(sectionMilestones, "Section milestone IDs");
+    for (const section of config.sections) {
+      if (!idPattern.test(section.id) || !section.label.trim() || !section.milestoneIds.length) errors.push(`Invalid section: ${section.id}.`);
+    }
+    if (sectionMilestones.length !== config.completion.milestones.length || config.completion.milestones.some((item) => !sectionMilestones.includes(item.id))) errors.push("Sections must cover each milestone exactly once.");
+  }
+  if (config.navigationLessons) {
+    unique(config.navigationLessons.map((lesson) => lesson.id), "Navigation lesson IDs");
+    unique(config.navigationLessons.map((lesson) => lesson.targetId), "Navigation lesson targets");
+    for (const lesson of config.navigationLessons) {
+      if (!idPattern.test(lesson.id) || !idPattern.test(lesson.targetId) || !lesson.title.trim()) errors.push(`Invalid navigation lesson: ${lesson.id}.`);
+    }
+  }
   const types = new Set(["view", "watch", "submit", "explore", "complete", "optional"]);
   for (const item of config.completion.milestones) {
     if (!idPattern.test(item.id) || !idPattern.test(item.targetId) || !item.label.trim() || !types.has(item.type) || typeof item.required !== "boolean") errors.push(`Invalid milestone: ${item.id}.`);

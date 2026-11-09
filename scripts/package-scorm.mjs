@@ -47,7 +47,11 @@ for (const name of files) {
       .replace(/\b(href|src|poster|data-image-src)="\/(?!\/)([^"]*)"/g, (_match, attribute, target) => {
         const logicalRoute = `/${target}`;
         return `${attribute}="${prefix}${attribute === "href" && routes.has(logicalRoute) ? `${target}index.html` : target}"`;
-      });
+      })
+      // Custom-property URLs are resolved where the stylesheet uses them,
+      // relative to _astro/, even when their value was set in HTML.
+      .replace(/(--step-panel-image:\s*url\(['"]?)\/(?!\/)/g, "$1../")
+      .replace(/url\((['"]?)\/(?!\/)/g, `url($1${prefix}`);
     bytes = Buffer.from(html);
   } else if (name.endsWith(".css")) {
     bytes = Buffer.from(bytes.toString("utf8").replace(/url\((['"]?)\/(?!\/)/g, "url($1../"));

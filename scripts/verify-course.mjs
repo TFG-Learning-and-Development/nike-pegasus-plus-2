@@ -96,8 +96,13 @@ try {
       await page.goto(origin, { waitUntil: "networkidle" });
       assert(await page.title() === builtConfig.identity.title, `${width}px browser title changed`);
       assert((await page.locator(".skip-link").count()) === 1, `${width}px skip link missing`);
-      assert((await page.locator(".course-links a[data-lesson-path]").count()) === builtConfig.lessons.length, `${width}px configured lesson links missing`);
-      assert((await page.locator(".course-links__heading").textContent()) === "Course lessons", `${width}px lessons heading changed`);
+      if (builtConfig.navigationLessons?.length) {
+        assert((await page.locator(".course-links a[data-course-section]").count()) === builtConfig.navigationLessons.length, `${width}px configured course sections missing`);
+        assert((await page.locator(".course-links__heading").textContent()) === "Course lessons", `${width}px lessons heading changed`);
+      } else if (builtConfig.lessons.length > 1) {
+        assert((await page.locator(".course-links a[data-lesson-path]").count()) === builtConfig.lessons.length, `${width}px configured lesson links missing`);
+        assert((await page.locator(".course-links__heading").textContent()) === "Course lessons", `${width}px lessons heading changed`);
+      } else assert((await page.locator(".lessons-toggle").count()) === 0, `${width}px one-page course retained Lessons dropdown`);
       assert((await page.locator("[data-progress-lessons] .course-progress__lesson").count()) === builtConfig.lessons.length, `${width}px progress lesson count changed`);
       assert((await page.locator(".footer-inner > p").textContent()) === "Return to People Connect to continue", `${width}px footer text changed`);
       assert((await page.locator(".footer-inner > p a, .footer-inner > p button, [data-progress-reset]").count()) === 0, `${width}px learner control entered footer or Progress`);
@@ -120,16 +125,18 @@ try {
       if (await firstToDo.count()) assert((await firstToDo.locator("h3").textContent()) === "Still to do", `${width}px missing outstanding heading`);
       await page.keyboard.press("Escape");
       assert(!(await page.locator("[data-progress-panel]").isVisible()), `${width}px progress panel did not close`);
+      if (builtConfig.navigationLessons?.length || builtConfig.lessons.length > 1) {
       const toggle = page.locator(".lessons-toggle");
       await toggle.press("Enter");
       assert(await page.locator(".course-links").isVisible(), `${width}px Lessons dropdown did not open`);
-      assert((await page.locator(".course-links a[data-lesson-path]").count()) >= 1, `${width}px no unlocked lesson link`);
+      assert((await page.locator(builtConfig.navigationLessons?.length ? ".course-links a[data-course-section]" : ".course-links a[data-lesson-path]").count()) >= 1, `${width}px no lesson link`);
       await progress.click();
       assert(!(await page.locator(".course-links").isVisible()) && await page.locator("[data-progress-panel]").isVisible(), `${width}px Lessons and Progress remained open together`);
       await page.keyboard.press("Escape");
       await toggle.click();
       await page.keyboard.press("Escape");
       assert(!(await page.locator(".course-links").isVisible()) && await toggle.evaluate((node) => document.activeElement === node), `${width}px Lessons Escape/focus failed`);
+      }
       if (width <= 375) {
         const footer = await page.locator(".footer-inner").evaluate((node) => {
           const style = getComputedStyle(node); const link = node.querySelector("a");

@@ -1,35 +1,78 @@
 ---
 import CoursePage from "../components/CoursePage.astro";
 import EditorialSplit from "../components/EditorialSplit.astro";
-import FlipCards from "../components/FlipCards.astro";
-import PortraitQuote from "../components/PortraitQuote.astro";
-import PremiumAssessment from "../components/PremiumAssessment.astro";
+import FeatureHotspots from "../components/FeatureHotspots.astro";
+import RevealGroup from "../components/RevealGroup.astro";
+import ModelChoice from "../components/ModelChoice.astro";
+import StepGroup from "../components/StepGroup.astro";
+import AssessmentSequence from "../components/AssessmentSequence.astro";
 import { courseData } from "../data/course";
 import { courseConfig } from "../data/course-config";
 ---
 <CoursePage lessonId={courseConfig.lessons[0].id}>
-  <section class="hero premium-hero" id="overview" data-nav-section data-completion-id="overview">
-    <img class="premium-hero__image" src={courseData.hero.image.src} alt={courseData.hero.image.alt} width="1200" height="800" fetchpriority="high" />
+  <section class="hero premium-hero" id="overview">
+    <img class="premium-hero__image" src="/assets/course/pegasus-plus-2-red-product.avif" alt="Red Nike Pegasus Plus 2 shoes on a running surface" width="1851" height="1389" fetchpriority="high" />
     <div class="premium-hero__shade"></div>
-    <div class="container hero-grid"><div class="hero-copy"><h1>{courseData.hero.title}</h1><p class="hero-description">{courseData.hero.description}</p><a class="button-link" href="#editorial">{courseData.hero.actionLabel}</a></div></div>
+    <div class="container hero-grid"><div class="hero-copy"><h1>{courseData.hero.title}</h1><p class="hero-description">{courseData.hero.description}</p><a class="button-link" href="#pegasus-intro">{courseData.hero.actionLabel}</a></div></div>
   </section>
-  <div id="editorial"><EditorialSplit title={courseData.editorial.title} paragraphs={courseData.editorial.paragraphs} media={courseData.editorial.media} /></div>
-  <div data-nav-section data-section-id="story"><PortraitQuote id="story" completionId="story" title={courseData.story.title} paragraphs={courseData.story.paragraphs} portrait={courseData.story.portrait} quote={courseData.story.quote} citation={courseData.story.citation} /></div>
-  <div data-nav-section data-section-id="principles"><FlipCards id="principles" title={courseData.principles.title} intro={courseData.principles.intro} cards={courseData.principles.cards} /></div>
-  <div data-nav-section data-section-id="assessment"><PremiumAssessment id="assessment" title={courseData.assessment.title} instruction={courseData.assessment.instruction} question={courseData.assessment.question} /></div>
-  <script>
-    const sections = [...document.querySelectorAll<HTMLElement>("[data-nav-section]")];
-    const sectionLinks = [...document.querySelectorAll<HTMLAnchorElement>("[data-section-link]")];
-    const setCurrent = () => { const line = scrollY + innerHeight * .5; const current = sections.reduce((selected, section) => section.offsetTop <= line ? section : selected, sections[0]); const id = current?.dataset.sectionId || current?.id; sectionLinks.forEach((link) => link.hash === `#${id}` ? link.setAttribute("aria-current", "location") : link.removeAttribute("aria-current")); };
-    addEventListener("scroll", setCurrent, { passive: true }); setCurrent();
-  </script>
-</CoursePage>
+  <EditorialSplit id="pegasus-intro" completionId="pegasus-intro" title={courseData.introduction.title} paragraphs={courseData.introduction.paragraphs} media={courseData.hero.image} />
+  <RevealGroup id="pegasus-customer" title="Listen to the Customer" intro="Reveal the Customer’s need, then consider why this shoe could suit them." ordered items={[
+    { id: "customer", title: "Customer says", body: `“${courseData.introduction.customer}”` },
+    { id: "reason", title: courseData.introduction.question, body: courseData.introduction.answer },
+  ]} />
+  <section class="course-position premium-section premium-section--dark">
+    <div class="container"><h2>Simple product position</h2><p>{courseData.introduction.position}</p><p>{courseData.introduction.sellingPoint}</p></div>
+  </section>
+  <FeatureHotspots id="pegasus-benefits" title={courseData.benefits.title} intro={courseData.benefits.intro} image={courseData.benefits.image} items={courseData.benefits.items} tip={courseData.benefits.tip} />
 
+    <ModelChoice id="pegasus-model-choice" title={courseData.models.title} intro={courseData.models.intro} models={courseData.models.models} needs={courseData.models.needs} honesty={courseData.models.honesty} />
+    <section class="getsales-context premium-section"><div class="container getsales-context__grid"><div><h2>{courseData.getsales.title}</h2><p>{courseData.getsales.intro}</p></div><blockquote><strong>Customer says</strong><p>“{courseData.getsales.customer}”</p></blockquote></div></section>
+    <StepGroup id="pegasus-getsales" title="Follow the eight GETSALES steps" intro="Reveal each step in order and consider how it applies to this Customer." ordered compactVertical panelImage="/assets/course/pegasus-plus-2-runners.webp" steps={courseData.getsales.steps.map((step) => ({ id: step.id, letter: step.letter, title: step.title, body: step.body }))} />
+
+
+    <AssessmentSequence id="pegasus-check" title={courseData.check.title} intro={courseData.check.intro} questions={courseData.check.questions} />
+    <section class="premium-section finish-section" id="pegasus-finish" data-completion-id="pegasus-finish" aria-labelledby="pegasus-finish-heading">
+      <div class="container">
+        <div class="finish-section__hero"><h2 id="pegasus-finish-heading">{courseData.finish.title}</h2><p>{courseData.finish.summary}</p></div>
+        <p class="finish-section__intro">{courseData.finish.intro}</p>
+        <div class="finish-section__points">{courseData.finish.points.map((point, index) => <p><strong>{String(index + 1).padStart(2, "0")}</strong>{point}</p>)}</div>
+        <div class="finish-section__guide"><h3>Quick decision guide</h3><div>{courseData.models.needs.map((need) => <p><strong>{need.prompt}</strong><span aria-hidden="true">→</span>{courseData.models.models.find((model) => model.id === need.correctId)?.name}</p>)}</div></div>
+        <p>{courseData.finish.action}</p><p class="finish-section__closing">{courseData.finish.closing}</p>
+      </div>
+    </section>
+
+</CoursePage>
 <style>
   .premium-hero { position: relative; min-height: clamp(36rem, 78vh, 50rem); }
   .premium-hero__image, .premium-hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .premium-hero__image { object-fit: cover; }
-  .premium-hero__shade { background: linear-gradient(90deg, rgb(12 28 34 / 90%) 0%, rgb(20 55 60 / 72%) 48%, rgb(20 55 60 / 18%) 100%); }
+  .premium-hero__image { object-fit: cover; object-position: center 45%; }
+  .premium-hero__shade { background: linear-gradient(90deg, color-mix(in srgb, var(--course-accent-strong) 28%, #000) 0%, color-mix(in srgb, var(--course-accent-strong) 28%, #000) 35%, transparent 100%); }
   .premium-hero .hero-grid { position: relative; z-index: 1; grid-template-columns: minmax(0, 1fr); }
-  @media (max-width: 48rem) { .premium-hero__shade { background: linear-gradient(90deg, rgb(12 28 34 / 92%), rgb(20 55 60 / 58%)); } }
+  .course-position { background: linear-gradient(90deg, rgb(0 0 0 / 76%), rgb(0 0 0 / 30%)), url("/assets/course/charcoal-studio-background.jpg") center / cover; }
+  .course-position h2 { margin-bottom: var(--course-space-heading-copy); }
+  .course-position p { max-width: var(--course-type-measure-standard); }
+  @media (max-width: 48rem) { .premium-hero__shade { background: linear-gradient(90deg, rgb(0 0 0 / 82%), rgb(0 0 0 / 40%)); } }
+
+  .getsales-context h2 { margin-bottom: var(--course-space-heading-copy); }
+  .getsales-context__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: center; gap: var(--course-space-grid); }
+  .getsales-context blockquote { margin: 0; padding: var(--course-space-card); border-left: .35rem solid var(--course-accent); border-radius: var(--course-radius-card); background: var(--course-gradient-soft); }
+  .getsales-context blockquote strong { display: block; margin-bottom: .75rem; color: var(--course-accent-strong); }
+  .getsales-context blockquote p { margin: 0; }
+  .finish-section { background: var(--course-gradient-soft); }
+  .finish-section__hero { display: grid; align-content: center; min-height: 22rem; margin-bottom: var(--course-space-grid); padding: var(--course-space-card); border-radius: var(--course-radius-card); color: #fff; background: linear-gradient(90deg, rgb(0 0 0 / 80%), rgb(0 0 0 / 30%)), url("/assets/course/pegasus-plus-2-runners.webp") center / cover; text-align: center; }
+  .finish-section__hero h2 { margin-bottom: var(--course-space-heading-copy); }
+  .finish-section__hero p { margin: 0; font-weight: 700; }
+  .finish-section__intro { margin-bottom: var(--course-space-grid); }
+  .finish-section__points { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--course-space-grid); margin-bottom: var(--course-space-section-compact); }
+  .finish-section__points p { display: grid; align-content: start; gap: 1rem; margin: 0; padding: var(--course-space-card); border: 1px solid var(--line); border-radius: var(--course-radius-card); background: #fff; box-shadow: var(--course-shadow-card); }
+  .finish-section__points strong { color: var(--course-accent-strong); }
+  .finish-section__guide { margin-bottom: var(--course-space-grid); padding: var(--course-space-card); border-radius: var(--course-radius-card); background: var(--course-surface-strong); color: #fff; }
+  .finish-section__guide h3 { margin-bottom: var(--course-space-grid); }
+  .finish-section__guide > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--course-space-grid); }
+  .finish-section__guide p { display: grid; gap: .5rem; margin: 0; padding: var(--course-space-card); border: 1px solid rgb(255 255 255 / 20%); border-radius: var(--course-radius-control); }
+  .finish-section__guide strong { color: var(--course-accent); }
+  .finish-section__closing { font-weight: 700; }
+  @media (max-width: 48rem) { .getsales-context__grid, .finish-section__guide > div { grid-template-columns: 1fr; } .finish-section__points { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 30rem) { .finish-section__points { grid-template-columns: 1fr; } }
+
 </style>

@@ -1,0 +1,67 @@
+---
+type Feature = { id: string; title: string; benefit: string; say: string };
+interface Props { id: string; title: string; intro: string; image: { src: string; alt: string }; items: readonly Feature[]; tip?: string }
+const { id, title, intro, image, items, tip } = Astro.props as Props;
+---
+<section class="premium-section feature-section" id={id} data-completion-id={id} data-required-items={JSON.stringify(items.map((item) => item.id))} data-feature-data={JSON.stringify(items)} data-feature-hotspots aria-labelledby={`${id}-heading`}>
+  <div class="container">
+    <div class="premium-section__intro"><h2 id={`${id}-heading`}>{title}</h2><p>{intro}</p></div>
+    <div class="feature-board">
+      <div class="feature-board__media">
+        <img src={image.src} alt={image.alt} width="1414" height="2000" loading="lazy" />
+        {items.map((item, index) => <button class={`feature-board__hotspot feature-board__hotspot--${index + 1}`} type="button" data-explore-item={item.id} aria-label={`Explore ${item.title}`} aria-controls={`${id}-detail`} aria-pressed="false">{index + 1}</button>)}
+      </div>
+      <div class="feature-board__content">
+        <div class="feature-board__choices">{items.map((item, index) => <button type="button" data-feature-choice={item.id} aria-controls={`${id}-detail`} aria-pressed="false"><span>{index + 1}</span>{item.title}</button>)}</div>
+        <div class="feature-board__detail" id={`${id}-detail`} aria-live="polite"><p>Select a numbered feature to see its benefit and a simple way to explain it.</p></div>
+      </div>
+    </div>
+    {tip && <p class="feature-tip"><strong>Sales tip</strong> {tip}</p>}
+  </div>
+</section>
+<script>
+  import { courseStateReady } from "../lib/course-state";
+  courseStateReady.then((courseState) => document.querySelectorAll<HTMLElement>("[data-feature-hotspots]").forEach((root) => {
+    if (root.dataset.ready) return; root.dataset.ready = "true";
+    const items = JSON.parse(root.dataset.featureData || "[]") as { id: string; title: string; benefit: string; say: string }[];
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>("[data-explore-item], [data-feature-choice]")];
+    const detail = root.querySelector<HTMLElement>(".feature-board__detail");
+    const show = (id: string, credit = true) => {
+      const item = items.find((entry) => entry.id === id); if (!item || !detail) return;
+      buttons.forEach((button) => button.setAttribute("aria-pressed", String((button.dataset.exploreItem || button.dataset.featureChoice) === id)));
+      detail.replaceChildren();
+      const heading = document.createElement("h3"); heading.textContent = item.title;
+      const benefit = document.createElement("p"); benefit.textContent = item.benefit;
+      const label = document.createElement("strong"); label.textContent = "Say it like this";
+      const say = document.createElement("p"); say.textContent = `“${item.say}”`;
+      detail.append(heading, benefit, label, say);
+      courseState.set(`${root.id}:active`, id);
+      if (credit) window.dispatchEvent(new CustomEvent("course-progress:explore", { detail: { activityId: root.id, itemId: id } }));
+    };
+    buttons.forEach((button) => button.addEventListener("click", () => show(button.dataset.exploreItem || button.dataset.featureChoice || "")));
+    const previous = courseState.get<string>(`${root.id}:active`, "");
+    if (previous) show(previous, false);
+  }));
+</script>
+<style>
+  .feature-section { background: var(--course-gradient-soft); }
+  .feature-board { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); overflow: hidden; border-radius: var(--course-radius-card); background: #fff; box-shadow: var(--course-shadow-card); }
+  .feature-board__media { position: relative; min-width: 0; aspect-ratio: 1 / 1; background: #fff; }
+  .feature-board__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+  .feature-board__hotspot { position: absolute; display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 2px solid #fff; border-radius: 50%; color: var(--ink); background: var(--course-accent); box-shadow: 0 .3rem .8rem rgb(0 0 0 / 25%); font-weight: 800; cursor: pointer; }
+  .feature-board__hotspot--1 { left: 27%; top: 34%; } .feature-board__hotspot--2 { left: 59%; top: 35%; } .feature-board__hotspot--3 { left: 52%; top: 18%; } .feature-board__hotspot--4 { left: 38%; top: 71%; }
+  .feature-board__hotspot[aria-pressed="true"] { background: var(--ink); }
+  .feature-board__content { display: grid; align-content: start; gap: var(--course-space-grid); padding: var(--course-space-card); background: var(--course-surface-strong); }
+  .feature-board__choices { display: grid; gap: .75rem; }
+  .feature-board__choices button { display: flex; min-height: 3.5rem; align-items: center; gap: 1rem; padding: .65rem 1rem; border: 2px solid transparent; border-radius: var(--course-radius-control); color: var(--ink); background: #fff; text-align: left; font: inherit; font-weight: 700; cursor: pointer; }
+  .feature-board__choices button:hover, .feature-board__choices button[aria-pressed="true"] { border-color: var(--course-accent); }
+  .feature-board__choices button span { display: grid; width: 2rem; height: 2rem; flex: 0 0 2rem; place-items: center; border-radius: 50%; color: var(--ink); background: var(--course-accent); }
+  .feature-board__detail { min-height: 10rem; padding: var(--course-space-card); border-radius: var(--course-radius-control); background: #fff; }
+  .feature-board__detail h3 { margin-bottom: var(--course-space-heading-copy); }
+  .feature-board__detail p { margin-bottom: .75rem; }
+  .feature-board__detail p:last-child { margin-bottom: 0; }
+  .feature-tip { margin: var(--course-space-grid) 0 0; padding: var(--course-space-card); border-left: .35rem solid var(--course-accent); border-radius: var(--course-radius-control); background: #fff; }
+  .feature-tip strong { margin-right: .35rem; }
+  .feature-board :focus-visible { outline: .2rem solid var(--course-accent); outline-offset: .2rem; }
+  @media (max-width: 48rem) { .feature-board { grid-template-columns: 1fr; } .feature-board__hotspot { width: 2.5rem; height: 2.5rem; } }
+</style>

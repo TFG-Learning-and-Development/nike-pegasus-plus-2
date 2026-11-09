@@ -12,27 +12,34 @@ if (index < 0) throw new Error(`Unknown lesson: ${lessonId}`);
 const current = courseConfig.lessons[index];
 const previous = courseConfig.lessons[index - 1];
 const next = courseConfig.lessons[index + 1];
+const navigationLessons = courseConfig.navigationLessons || [];
 const serializedConfig = JSON.stringify(courseConfig).replaceAll("<", "\\u003c");
 ---
 
 <CourseLayout title={courseConfig.identity.title} description={courseConfig.identity.description} theme={courseConfig.theme}>
-  <div class="course-page" id="top" data-course-path={current.path} data-access-pending>
+  <div class:list={["course-page", { "course-page--white-logo": courseConfig.brand.logoSrc?.includes("white") }]} id="top" data-course-path={current.path} data-access-pending>
     <header class="site-header">
-      <nav class="course-nav container" aria-label="Course lessons">
+      <nav class="course-nav container" aria-label="Course navigation">
         <a class="brand-link" href="/" aria-label={courseConfig.brand.homeLabel} data-lesson-path="/">
-          <span class="brand-mark" aria-hidden="true">
+          <span class="brand-mark">
             {courseConfig.brand.logoSrc ? <img src={courseConfig.brand.logoSrc} alt={courseConfig.brand.logoAlt || "Course logo"} /> : "CS"}
           </span>
         </a>
         <div class="nav-actions">
-          <div class="lessons-menu">
+          {(navigationLessons.length > 0 || courseConfig.lessons.length > 1) && <div class="lessons-menu">
             <button class="lessons-toggle" type="button" aria-expanded="false" aria-controls="course-links">
               Lessons
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 6 5 5 5-5" /></svg>
             </button>
             <div class="course-links" id="course-links" hidden>
               <h2 class="course-links__heading">Course lessons</h2>
-              {courseConfig.lessons.map((lesson, lessonIndex) => (
+              {navigationLessons.map((lesson, lessonIndex) => (
+                <a href={`#${lesson.targetId}`} data-course-section={lesson.targetId} aria-current={lessonIndex === 0 ? "location" : undefined}>
+                  <span class="course-links__number" aria-hidden="true">{String(lessonIndex).padStart(2, "0")}</span>
+                  <span class="course-links__body"><span>{lesson.title}</span></span>
+                </a>
+              ))}
+              {navigationLessons.length === 0 && courseConfig.lessons.map((lesson, lessonIndex) => (
                 <a href={lesson.path} data-lesson-path={lesson.path} data-lesson-index={lessonIndex} aria-current={lesson.id === current.id ? "page" : undefined}>
                   <span class="course-links__number" aria-hidden="true">{String(lessonIndex).padStart(2, "0")}</span>
                   <span class="course-links__body"><span>{lesson.label}</span><small data-lock-reason hidden></small></span>
@@ -42,14 +49,14 @@ const serializedConfig = JSON.stringify(courseConfig).replaceAll("<", "\\u003c")
                 </a>
               ))}
             </div>
-          </div>
+          </div>}
           <CourseProgress config={courseConfig} />
         </div>
       </nav>
     </header>
     <p class="course-access-notice container" data-access-notice role="status" hidden></p>
     <main id="main-content"><slot /></main>
-    <LessonNavigation previous={previous} next={next} />
+    {courseConfig.lessons.length > 1 && <LessonNavigation previous={previous} next={next} />}
     <footer class="course-footer">
       <div class="container footer-inner">
         <p>{courseData.footer.text}</p>
@@ -78,6 +85,23 @@ const serializedConfig = JSON.stringify(courseConfig).replaceAll("<", "\\u003c")
       if (toggle?.getAttribute("aria-expanded") === "true" && !(event.target as Element).closest(".lessons-menu")) close();
     });
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && toggle?.getAttribute("aria-expanded") === "true") { close(); toggle.focus(); } });
+    const sectionLinks = [...document.querySelectorAll<HTMLAnchorElement>(".course-links a[data-course-section]")];
+    if (sectionLinks.length) {
+      let scheduled = false;
+      const updateCurrentSection = () => {
+        scheduled = false;
+        const threshold = scrollY + (document.querySelector(".site-header")?.getBoundingClientRect().height || 0) + 48;
+        const current = sectionLinks.reduce((chosen, link) => {
+          const target = document.getElementById(link.dataset.courseSection || "");
+          return target && target.offsetTop <= threshold ? link : chosen;
+        }, sectionLinks[0]);
+        sectionLinks.forEach((link) => link === current ? link.setAttribute("aria-current", "location") : link.removeAttribute("aria-current"));
+      };
+      const scheduleCurrentSection = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(updateCurrentSection); } };
+      addEventListener("scroll", scheduleCurrentSection, { passive: true });
+      addEventListener("resize", scheduleCurrentSection);
+      scheduleCurrentSection();
+    }
     const update = (detail: { unlockedPaths: string[]; completedIds: string[]; milestones: { id: string; path: string; required: boolean }[] }) => {
       const unlocked = new Set(detail.unlockedPaths);
       const completed = new Set(detail.completedIds);

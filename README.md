@@ -1,6 +1,6 @@
-# astro-course-shell
+# Nike Pegasus Plus 2
 
-A neutral, reusable Astro course starter with a premium editorial and interaction library, configurable lessons and themes, requirements-based SCORM 1.2 packaging, responsive navigation, accessible focus states, a skip link and reduced-motion support. The two-lesson demonstration shows representative patterns without turning the course into a component gallery.
+This repository contains the approved Nike Pegasus Plus 2 course, built on the reusable Astro course shell. Learners scroll through one page with approved product content, interactions, section-grouped progress and requirements-based SCORM 1.2 completion. The shared component library, typography, accessible navigation, skip link and reduced-motion support remain available for future courses.
 
 The dependency baseline is Astro `7.3.8` with Tailwind CSS `4.2.2` through `@tailwindcss/vite`. Astro 7 uses Vite 8; the installed Tailwind adapter supports that Vite major directly, so no styling migration or compatibility shim is required.
 
@@ -28,7 +28,7 @@ npm run preview
 
 Confirm `node --version` is at least `22.19.0` before setup, then use `npm ci` for a clean, lockfile-exact install. On a fresh Linux CI image, Playwright may also require `npx playwright install --with-deps chromium`. Do not replace the lockfile with a lockfile from another package manager.
 
-The starter runs locally without credentials, environment variables or an LMS connection. A packaged launch uses only the SCORM 1.2 API supplied by its LMS window. Its only external dependencies are the packages recorded in `package-lock.json`; no external runtime services, fonts, images or analytics are used.
+The course runs locally without credentials, environment variables or an LMS connection. A packaged launch uses only the SCORM 1.2 API supplied by its LMS window. Its only external dependencies are the packages recorded in `package-lock.json`; no external runtime services, fonts, images or analytics are used.
 
 Run `npm run dev` and open `http://localhost:4321/__component-gallery/` for the development-only component gallery. It renders the actual shared components with neutral examples. Preview choices and reflection text stay in memory for that page session. The route is excluded from normal production builds and SCORM packages; the verification fixture remains available only to the temporary verifier build.
 
@@ -38,7 +38,7 @@ Run `npm run dev` and open `http://localhost:4321/__component-gallery/` for the 
 - `src/data/course-config.ts` — typed identity, branding, ordered lessons, unlocking and package metadata with validation.
 - `src/data/course-completion.ts` — course-specific milestone requirements and versioned storage key.
 - `docs/course-engine.md` — beginner lesson example and reusable Codex prompts.
-- `src/pages/index.astro` and `src/pages/[...lesson].astro` — entry content and generated named/nested lesson pages.
+- `src/pages/index.astro` and `src/pages/[...lesson].astro` — the continuous course page and redirects from its two former lesson URLs.
 - `src/components/CoursePage.astro` — shared responsive header, Progress, navigation and standard footer.
 - `src/layouts/CourseLayout.astro` — shared document shell and metadata.
 - `src/components/` — reusable presentation components; see [`docs/components.md`](docs/components.md) for properties and examples.
@@ -52,13 +52,13 @@ Run `npm run dev` and open `http://localhost:4321/__component-gallery/` for the 
 
 ## Editing guidance
 
-Start with `src/data/course.ts`, then configure ordered routes and package identity in `src/data/course-config.ts` and real milestone requirements in `src/data/course-completion.ts`. The first lesson uses `/`; later paths may be named and nested, such as `/topics/practice/`. Add a matching `courseData.lessonPages` entry for each additional lesson. Keep every milestone `targetId` in sync with an actual rendered element. Add course-specific assets under `public/assets/`.
+Start with `src/data/course.ts`, then configure the course and package identity in `src/data/course-config.ts` and milestone requirements in `src/data/course-completion.ts`. The Pegasus course uses one route, `/`; `courseData.progressSections` supplies checklist section anchors. Keep every milestone `targetId` in sync with an actual rendered element. Add course-specific assets under `public/assets/`.
 
 For a real build, treat the approved storyboard as the source for content, sequence, questions and required activities. Use the mood board and supplied assets for the course theme, imagery and composition. Select the smallest useful set of premium patterns, register the actual milestones during the build, and use unique course, activity and storage identities. If the brief does not establish content or a completion requirement, stop and request the approved decision rather than inventing it.
 
 Do not add eyebrow content or small contextual labels above headings. Begin each section with its semantic heading, followed by an optional introduction when useful; the starter intentionally provides no eyebrow data field, component property, typography role or styling.
 
-The default header is logo-only: keep the home link's accessible name, but do not add a visible course-name label beside the logo. The logo slot accepts wide or square image/SVG artwork without stretching. Place Lessons and Progress together at the padded right edge. The Lessons button opens a dark, internally scrolling overlay with configured lesson numbers starting at 00, titles, current-lesson highlighting and lock explanations from the shared unlock state. Do not place individual lesson links in the header row. Preserve package-safe routes, keyboard focus, Escape and outside-click dismissal, and mutual dismissal with Progress on desktop and mobile.
+The current header uses the white Totalsports wordmark on the mood-board blue `#009fd7`, with white outlined Lessons and Progress controls at the right. Lessons links to the three logical lesson starts on the continuous page; it does not lock sections or open separate routes. Its home link has an accessible name, and the image keeps its aspect ratio.
 
 The footer sentence is fixed for every course as `Return to People Connect to continue`. Keep it as plain static text: do not turn it into a link or button, attach completion tracking, or add an LMS action. Keep Back to top in its default compact capsule treatment with the upward arrow, keyboard focus, anchor behaviour and reduced-motion support. The footer background is course-specific and should follow the supplied mood board or design board through the theme colour settings, with readable text contrast.
 
@@ -107,7 +107,7 @@ The default build is a static site in `dist/` intended to be served at a domain 
 
 ## SCORM status
 
-The neutral SCORM 1.2 demonstration package is `scorm-output/Course-Shell-SCORM-1.2.zip`. Before using this shell for a real course, replace the demonstration copy, course identity, package metadata and milestone requirements with approved course-specific values, increment the storage version when requirements change, and test the resulting ZIP in the target LMS. No learner-facing Exit, Finish or Reset Progress control is included.
+The generated package is `scorm-output/Nike-Pegasus-Plus-2-SCORM-1.2.zip`. The extracted ZIP passes simulated SCORM 1.2 checks. Live Oracle People Connect import, launch, resume and reporting still need acceptance testing. No learner-facing Exit, Finish or Reset Progress control is included.
 
 ## Optional WASM packages
 

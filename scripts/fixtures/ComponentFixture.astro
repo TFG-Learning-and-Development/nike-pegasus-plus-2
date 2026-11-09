@@ -19,6 +19,9 @@ import MatchingActivity from "../../src/components/MatchingActivity.astro";
 import StepGroup from "../../src/components/StepGroup.astro";
 import ItemExplorer from "../../src/components/ItemExplorer.astro";
 import ReflectionActivity from "../../src/components/ReflectionActivity.astro";
+import FeatureHotspots from "../../src/components/FeatureHotspots.astro";
+import ModelChoice from "../../src/components/ModelChoice.astro";
+import AssessmentSequence from "../../src/components/AssessmentSequence.astro";
 import "../../src/styles/global.css";
 
 const columns = [
@@ -94,6 +97,15 @@ const rows = [
 
       <section class="verification-premium" aria-labelledby="interaction-fixture-heading">
         <h2 id="interaction-fixture-heading">Interaction patterns</h2>
+        <GalleryExample name="FeatureHotspots" purpose="Explore labelled features on one product image." properties="id, title, intro, image, items with id/title/benefit/say, tip" completion="EXPLORE after each feature is selected." usage="src/components/FeatureHotspots.astro">
+          <FeatureHotspots id="gallery-feature-hotspots" title="Explore two details" intro="Select either detail." image={{ src: "/assets/demo/item-plan.svg", alt: "Neutral planning illustration" }} items={[{ id: "shape", title: "Shape", benefit: "The form guides attention.", say: "The shape helps make the idea clear." }, { id: "colour", title: "Colour", benefit: "Contrast separates parts.", say: "The colour helps you see the difference." }]} />
+        </GalleryExample>
+        <GalleryExample name="ModelChoice" purpose="Match a displayed need to one of several cards." properties="id, title, intro, models, needs, honesty" completion="EXPLORE after a card is selected for each need; an incorrect selection is still an attempt." usage="src/components/ModelChoice.astro">
+          <ModelChoice id="gallery-model-choice" title="Choose a format" intro="Select a need, then choose a card." models={[{ id: "short", name: "Short format", bestFor: "A quick reminder.", position: "A concise format.", image: "/assets/demo/item-plan.svg", alt: "Neutral illustration" }, { id: "long", name: "Long format", bestFor: "A detailed guide.", position: "A detailed format.", image: "/assets/demo/item-reflect.svg", alt: "Neutral illustration" }]} needs={[{ id: "quick", prompt: "A quick reminder", correctId: "short", reason: "Short format suits a quick reminder." }, { id: "detail", prompt: "A detailed guide", correctId: "long", reason: "Long format suits a detailed guide." }]} />
+        </GalleryExample>
+        <GalleryExample name="AssessmentSequence" purpose="Check several single-choice decisions with shuffled answers and immediate feedback." properties="id, title, intro, questions with id/title/prompt/options/correctIndex/feedback" completion="Each question can use a SUBMIT milestone; selecting any answer records a valid attempt, including an incorrect answer." usage="src/components/AssessmentSequence.astro">
+          <AssessmentSequence id="gallery-assessment-sequence" title="Check two decisions" intro="Select an answer to see feedback." questions={[{ id: "first", title: "First decision", prompt: "Which action is clear?", options: ["State the purpose", "Hide the purpose"], correctIndex: 0, feedback: "A clear purpose helps the learner." }, { id: "second", title: "Second decision", prompt: "Which feedback helps?", options: ["Explain the result", "Show only a colour"], correctIndex: 0, feedback: "An explanation makes the result understandable." }]} />
+        </GalleryExample>
         <GalleryExample name="PremiumAssessment · assessment" purpose="Practise one decision and see immediate feedback." properties="id, title, instruction, question prompt/options/correctIndex/feedback" completion="An intentional answer selection is a valid SUBMIT attempt, including an incorrect choice." usage="src/components/PremiumAssessment.astro">
           <PremiumAssessment id="gallery-assessment" title="Choose the useful next action" instruction="Select one response to see feedback." question={{ prompt: "A learner needs to compare two ideas. What should the activity invite them to do?", options: ["Compare the ideas against a clear criterion", "Open an unrelated image", "Wait for a timer"], correctIndex: 0, correctFeedback: "A criterion makes the comparison meaningful.", incorrectFeedback: "Choose the action that supports the comparison." }} />
         </GalleryExample>
@@ -106,8 +118,8 @@ const rows = [
         <GalleryExample name="MatchingActivity" purpose="Match each prompt to a relevant option and review feedback." properties="id, title, intro, prompts, options, result labels" completion="A complete submitted matching attempt is a valid SUBMIT attempt." usage="src/components/MatchingActivity.astro">
           <MatchingActivity id="gallery-matching" title="Match the format" prompts={[{ id: "compare", prompt: "Compare options", answerId: "table" }, { id: "sequence", prompt: "Follow a short process", answerId: "steps" }]} options={[{ id: "steps", label: "Step group" }, { id: "table", label: "Comparison table" }]} />
         </GalleryExample>
-        <GalleryExample name="StepGroup" purpose="Walk through a short ordered process with tabs and controls." properties="id, title, intro, steps with unique child IDs" completion="EXPLORE only after every required step is selected." usage="src/components/StepGroup.astro">
-          <StepGroup id="gallery-steps" title="A short process" steps={[{ id: "notice", title: "Notice", body: "Identify the useful fact." }, { id: "choose", title: "Choose", body: "Select an action that fits." }]} />
+        <GalleryExample name="StepGroup" purpose="Walk through a short ordered process with tabs and controls." properties="id, title, intro, steps with unique child IDs and optional letters; optional ordered, compactVertical and panelImage" completion="EXPLORE only after every required step is selected." usage="src/components/StepGroup.astro">
+          <StepGroup id="gallery-steps" title="A short process" compactVertical steps={[{ id: "notice", letter: "N", title: "Notice", body: "Identify the useful fact." }, { id: "choose", letter: "C", title: "Choose", body: "Select an action that fits." }]} />
         </GalleryExample>
         <GalleryExample name="ItemExplorer" purpose="Browse categories, item details and local image galleries." properties="id, title, intro, categories, items with images/details" completion="EXPLORE only after every required item is selected; image changes are separate." usage="src/components/ItemExplorer.astro">
           <ItemExplorer id="gallery-explorer" title="Explore the resources" categories={[{ id: "prepare", label: "Prepare" }, { id: "apply", label: "Apply" }]} items={[{ id: "plan", categoryId: "prepare", title: "Plan", summary: "Set a clear purpose.", images: [{ src: "/assets/demo/item-plan.svg", alt: "Illustrated planning board" }, { src: "/assets/demo/editorial-landscape.svg", alt: "Abstract landscape" }], details: [{ label: "Use", text: "Shape a short learning sequence." }] }, { id: "reflect", categoryId: "apply", title: "Reflect", summary: "Connect an idea to practice.", images: [{ src: "/assets/demo/item-reflect.svg", alt: "Illustrated reflection symbol" }], details: [{ label: "Use", text: "Consider an action after learning." }] }]} />
